@@ -2,12 +2,16 @@ const express = require('express');
 const dotenv = require('dotenv')
 dotenv.config();
 const cors = require('cors');
+const connectDB = require('./config/db');
 
 const app = express();
 
 //Built-in Middlewares
 app.use(express.json());
 app.use(cors());
+
+//Database Connection
+connectDB();
 
 //Test Routes
 app.get('/', (req, res) => {
