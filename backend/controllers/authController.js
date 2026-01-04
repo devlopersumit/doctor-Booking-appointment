@@ -1,40 +1,94 @@
 const inputValidator = require("../helpers/validation");
-const bcrypt =  require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const User = require("../models/User");
+const jwt = require('jsonwebtoken');
 
 
-//User Registration
+//User Signup
 const signup = async (req, res) => {
-    const {name, email, password, role} = req.body;
+    const { name, email, password, role } = req.body;
 
-   try {
-     inputValidator(name, email, password, role);
+    try {
+        inputValidator(name, email, password, role);
 
-    const user = await User.findOne(email);
-    if(user) {
-      return res.status(400).json({success:false, message:'User already exist'});
+        const user = await User.findOne({email});
+        if (user) {
+            return res.status(400).json({ success: false, message: 'User already exist' });
+        }
+
+        const newUser = await User.create({
+            name,
+            email,
+            password,
+            role
+        });
+
+        const token = jwt.sign({id:newUser._id, email }, process.env.SECRET_KEY);
+
+        res.cookie("jwtToken", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 24 * 60 * 60 * 1000
+        });
+
+
+        return res.status(201).json({
+            success: true,
+            message: 'User Registered Successfully',
+            user: {
+                name, email
+            }
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error occured in user creation: ' + error.message
+        })
     }
 
-    const newUser = await User.create({
-        name,
-         email, 
-        password,
-         role
-    });
+};
 
-    return res.status(201).json({
-        success:true,
-        message:'User Created Successfully',
-        user: {
-            name, email
+//User Login
+const Login = async (req,res) => {
+    const{email, password} = req.body;
+
+    try {
+        const user = await User.findOne({email});
+        if(!user) {
+            return res.status(404).json({
+                success:false,
+                message:'User not found'
+            })
+        };
+
+        const isCorrectPassword = await bcrypt.compare(password, user.password);
+        if(isCorrectPassword === false) {
+            return res.status(401).json({
+                success:false,
+                message:'Invalid Credentials'
+            })
         }
-    })
 
-   } catch (error) {
-    return res.status(500).json({
-        success:false,
-        message:'Error occured in user creation: ' + error.message
-    })
-   }
+        const token = jwt.sign({id:user._id, email }, process.env.SECRET_KEY);
 
-}
+        res.cookie("jwtToken", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 24 * 60 * 60 * 1000
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Login Successfully',
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:'Login Failed'+ error.message
+        })
+    }
+};
