@@ -4,7 +4,7 @@ const User = require("../models/User");
 const jwt = require('jsonwebtoken');
 
 
-//User Signup
+//Signup
 const signup = async (req, res) => {
     const { name, email, password, role } = req.body;
 
@@ -50,8 +50,8 @@ const signup = async (req, res) => {
 
 };
 
-//User Login
-const Login = async (req,res) => {
+//Login
+const login = async (req,res) => {
     const{email, password} = req.body;
 
     try {
@@ -92,3 +92,26 @@ const Login = async (req,res) => {
         })
     }
 };
+
+//Logout
+const logout = (req, res) => {
+    res.clearCookie('jwtToken');
+    return res.status(200).json({
+        success:true,
+        message:'Logged out succesfully'
+    });
+};
+
+//profile
+const userProfile = async (req, res) => {
+    try {
+        const userInfo = await User.find
+    } catch (error) {
+        res.status(500).json({
+            success:false,
+            message:'Error Occured in Profile fetching: ' + error.message
+        })
+    }
+};
+
+module.exports = {signup, login, logout};
