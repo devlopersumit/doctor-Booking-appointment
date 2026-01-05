@@ -11,7 +11,7 @@ const signup = async (req, res) => {
     try {
         inputValidator(name, email, password, role);
 
-        const user = await User.findOne({email});
+        const user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ success: false, message: 'User already exist' });
         }
@@ -23,7 +23,7 @@ const signup = async (req, res) => {
             role
         });
 
-        const token = jwt.sign({id:newUser._id, email }, process.env.SECRET_KEY);
+        const token = jwt.sign({ id: newUser._id, email }, process.env.SECRET_KEY);
 
         res.cookie("jwtToken", token, {
             httpOnly: true,
@@ -51,27 +51,27 @@ const signup = async (req, res) => {
 };
 
 //Login
-const login = async (req,res) => {
-    const{email, password} = req.body;
+const login = async (req, res) => {
+    const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({email});
-        if(!user) {
+        const user = await User.findOne({ email });
+        if (!user) {
             return res.status(404).json({
-                success:false,
-                message:'User not found'
+                success: false,
+                message: 'User not found'
             })
         };
 
         const isCorrectPassword = await bcrypt.compare(password, user.password);
-        if(isCorrectPassword === false) {
+        if (isCorrectPassword === false) {
             return res.status(401).json({
-                success:false,
-                message:'Invalid Credentials'
+                success: false,
+                message: 'Invalid Credentials'
             })
         }
 
-        const token = jwt.sign({id:user._id, email }, process.env.SECRET_KEY);
+        const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY);
 
         res.cookie("jwtToken", token, {
             httpOnly: true,
@@ -87,8 +87,8 @@ const login = async (req,res) => {
 
     } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:'Login Failed'+ error.message
+            success: false,
+            message: 'Login Failed' + error.message
         })
     }
 };
@@ -97,21 +97,38 @@ const login = async (req,res) => {
 const logout = (req, res) => {
     res.clearCookie('jwtToken');
     return res.status(200).json({
-        success:true,
-        message:'Logged out succesfully'
+        success: true,
+        message: 'Logged out succesfully'
     });
 };
 
 //profile
 const userProfile = async (req, res) => {
     try {
-        const userInfo = await User.find
+        const userInfo = await User.find(req.user._id);
+        if (userInfo) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not does not exist'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile Information Fetched Succcessfully',
+            userInfo: {
+                name:userInfo.name,
+                email:userInfo.email,
+                role:userInfo.role,
+                phone:userInfo.phone
+            }
+        });
     } catch (error) {
         res.status(500).json({
-            success:false,
-            message:'Error Occured in Profile fetching: ' + error.message
+            success: false,
+            message: 'Error Occured in Profile fetching: ' + error.message
         })
     }
 };
 
-module.exports = {signup, login, logout};
+module.exports = { signup, login, logout, userProfile };
